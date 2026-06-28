@@ -18,14 +18,14 @@ function initializeClient() {
 
     client.once("ready", () => {
         connected = true;
-        console.log("✅ WhatsApp client is ready");
+        console.log("WhatsApp client is ready");
 
         // Load target group from environment
         if (process.env.TARGET_GROUP_ID) {
             targetGroupId = process.env.TARGET_GROUP_ID;
-            console.log("📱 Target group loaded from config:", targetGroupId);
+            console.log("Target group loaded from config:", targetGroupId);
         } else {
-            console.log("⚠️ No target group configured. Use /api/whatsapp/groups to list groups and set TARGET_GROUP_ID in .env");
+            console.log("No target group configured. Use /api/whatsapp/groups to list groups and set TARGET_GROUP_ID in .env");
         }
     });
 
@@ -40,7 +40,7 @@ function initializeClient() {
     });
 
     client.on("authenticated", () => {
-        console.log("✅ Authenticated successfully");
+        console.log("Authenticated successfully");
     });
 
     client.on("auth_failure", (msg) => {
@@ -84,7 +84,7 @@ async function getGroups() {
  */
 function setTargetGroup(groupId) {
     targetGroupId = groupId;
-    console.log('📱 Target group set:', groupId);
+    console.log('Target group set:', groupId);
 }
 
 /**
@@ -102,7 +102,7 @@ async function sendMessageToGroup(message) {
     }
 
     await client.sendMessage(targetGroupId, message);
-    console.log('✅ Message sent to group');
+    console.log('Message sent to group');
 }
 
 /**

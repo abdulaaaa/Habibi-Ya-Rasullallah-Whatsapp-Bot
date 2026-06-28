@@ -74,45 +74,45 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
     console.log('');
 
     // Initialize WhatsApp client
-    console.log('📱 Initializing WhatsApp client...');
+    console.log('Initializing WhatsApp client...');
     whatsappService.initializeClient();
 
     // Initialize scheduler service with dependencies
-    console.log('📅 Initializing scheduler service...');
+    console.log('Initializing scheduler service...');
     schedulerService.initialize({
         whatsappService: whatsappService,
         messageService: messageService
     });
 
     // Load all active schedules from database
-    console.log('📅 Loading active message schedules...');
+    console.log('Loading active message schedules...');
     schedulerService.initializeSchedules();
 
     console.log('');
-    console.log('✅ All services initialized!');
-    console.log('💡 Scan the QR code above (if shown) to connect WhatsApp');
-    console.log('💡 Once connected, scheduled messages will be sent automatically');
+    console.log('All services initialized!');
+    console.log('Scan the QR code above (if shown) to connect WhatsApp');
+    console.log('Once connected, scheduled messages will be sent automatically');
     console.log('');
 });
 
 // Handle graceful shutdown
 process.on("SIGTERM", () => {
     console.log("\nSIGTERM received, shutting down gracefully...");
-    console.log("🛑 Stopping all scheduled jobs...");
+    console.log("Stopping all scheduled jobs...");
     schedulerService.stopAllSchedules();
-    console.log("👋 Goodbye!");
+    console.log("Goodbye!");
     process.exit(0);
 });
 
 process.on("SIGINT", () => {
     console.log("\n\nSIGINT received, shutting down gracefully...");
-    console.log("🛑 Stopping all scheduled jobs...");
+    console.log("Stopping all scheduled jobs...");
     schedulerService.stopAllSchedules();
-    console.log("👋 Goodbye!");
+    console.log("Goodbye!");
     process.exit(0);
 });

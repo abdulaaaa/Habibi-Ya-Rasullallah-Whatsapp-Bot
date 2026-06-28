@@ -14,7 +14,7 @@ let messageService = null;
 function initialize(services) {
     whatsappService = services.whatsappService;
     messageService = services.messageService;
-    console.log('📅 Scheduler service initialized');
+    console.log('Scheduler service initialized');
 }
 
 /**
@@ -22,7 +22,7 @@ function initialize(services) {
  * Loads all active messages and creates cron jobs for them
  */
 function initializeSchedules() {
-    console.log('📅 Initializing schedules...');
+    console.log('Initializing schedules...');
 
     // For now, this is a placeholder
     // When messageService is ready, it will load from database
@@ -30,19 +30,19 @@ function initializeSchedules() {
         const messages = messageService.getAllMessages();
         const activeMessages = messages.filter(m => m.is_active);
 
-        console.log(`📅 Found ${activeMessages.length} active messages to schedule`);
+        console.log(`Found ${activeMessages.length} active messages to schedule`);
 
         activeMessages.forEach(msg => {
             try {
                 addSchedule(msg.id, msg.send_time, msg.days_of_week, msg.message_content);
             } catch (error) {
-                console.error(`❌ Failed to schedule message ${msg.id}:`, error.message);
+                console.error(`Failed to schedule message ${msg.id}:`, error.message);
             }
         });
 
-        console.log(`✅ Initialized ${jobs.size} scheduled jobs`);
+        console.log(`Initialized ${jobs.size} scheduled jobs`);
     } else {
-        console.log('⚠️ Message service not available yet - schedules will be initialized later');
+        console.log('Message service not available yet - schedules will be initialized later');
     }
 }
 
@@ -84,18 +84,18 @@ function addSchedule(messageId, time, days, content) {
 
     // Create cron job
     const job = cron.schedule(cronExpression, async () => {
-        console.log(`⏰ Scheduled send triggered for message ${messageId}`);
-        console.log(`📝 Content: ${content.substring(0, 50)}...`);
+        console.log(`Scheduled send triggered for message ${messageId}`);
+        console.log(`Content: ${content.substring(0, 50)}...`);
 
         try {
             if (whatsappService && whatsappService.sendScheduledMessage) {
                 await whatsappService.sendScheduledMessage(messageId, content);
-                console.log(`✅ Message ${messageId} sent successfully`);
+                console.log(`Message ${messageId} sent successfully`);
             } else {
-                console.log(`⚠️ WhatsApp service not available - would send: "${content.substring(0, 30)}..."`);
+                console.log(`WhatsApp service not available - would send: "${content.substring(0, 30)}..."`);
             }
         } catch (error) {
-            console.error(`❌ Failed to send message ${messageId}:`, error.message);
+            console.error(`Failed to send message ${messageId}:`, error.message);
         }
     }, {
         scheduled: true,
@@ -106,7 +106,7 @@ function addSchedule(messageId, time, days, content) {
 
     // Log schedule info
     const daysFormatted = days === '*' ? 'Every day' : `Days: ${days}`;
-    console.log(`✅ Scheduled message ${messageId}: ${time} - ${daysFormatted}`);
+    console.log(`Scheduled message ${messageId}: ${time} - ${daysFormatted}`);
 
     return job;
 }
@@ -119,7 +119,7 @@ function addSchedule(messageId, time, days, content) {
  * @param {string} content - New message content
  */
 function updateSchedule(messageId, time, days, content) {
-    console.log(`🔄 Updating schedule for message ${messageId}`);
+    console.log(`Updating schedule for message ${messageId}`);
 
     // Remove old schedule
     removeSchedule(messageId);
@@ -127,7 +127,7 @@ function updateSchedule(messageId, time, days, content) {
     // Add new schedule
     addSchedule(messageId, time, days, content);
 
-    console.log(`✅ Schedule updated for message ${messageId}`);
+    console.log(`Schedule updated for message ${messageId}`);
 }
 
 /**
@@ -140,7 +140,7 @@ function removeSchedule(messageId) {
     if (job) {
         job.stop();
         jobs.delete(messageId);
-        console.log(`🗑️ Removed schedule for message ${messageId}`);
+        console.log(`Removed schedule for message ${messageId}`);
     }
 }
 
@@ -148,15 +148,15 @@ function removeSchedule(messageId) {
  * Stop all schedules
  */
 function stopAllSchedules() {
-    console.log(`🛑 Stopping all ${jobs.size} scheduled jobs...`);
+    console.log(`Stopping all ${jobs.size} scheduled jobs...`);
 
     jobs.forEach((job, messageId) => {
         job.stop();
-        console.log(`🛑 Stopped job for message ${messageId}`);
+        console.log(`Stopped job for message ${messageId}`);
     });
 
     jobs.clear();
-    console.log('✅ All schedules stopped');
+    console.log('All schedules stopped');
 }
 
 /**
@@ -198,20 +198,20 @@ function addTestSchedule(content = 'Test message from scheduler') {
 
     // Every minute: "* * * * *"
     const job = cron.schedule('* * * * *', () => {
-        console.log(`⏰ TEST: Sending message every minute`);
-        console.log(`📝 Content: ${content}`);
+        console.log(`TEST: Sending message every minute`);
+        console.log(`Content: ${content}`);
 
         if (whatsappService && whatsappService.sendScheduledMessage) {
             whatsappService.sendScheduledMessage(testId, content)
-                .then(() => console.log('✅ Test message sent'))
-                .catch(err => console.error('❌ Test send failed:', err.message));
+                .then(() => console.log('Test message sent'))
+                .catch(err => console.error('Test send failed:', err.message));
         } else {
-            console.log('⚠️ WhatsApp service not available - mock send');
+            console.log('WhatsApp service not available - mock send');
         }
     });
 
     jobs.set(testId, job);
-    console.log('✅ Test schedule added - will send every minute');
+    console.log('Test schedule added - will send every minute');
 
     return testId;
 }

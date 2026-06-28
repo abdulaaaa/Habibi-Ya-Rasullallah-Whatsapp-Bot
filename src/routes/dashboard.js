@@ -18,11 +18,11 @@ router.get('/dashboard', requireAuth, (req, res) => {
 // GET /api/messages - List all messages
 router.get('/api/messages', requireAuth, (req, res) => {
     try {
-        console.log('📋 Getting all messages from database');
+        console.log('Getting all messages from database');
         const messages = messageService.getAllMessages();
         res.json(messages);
     } catch (error) {
-        console.error('❌ Error getting messages:', error);
+        console.error('Error getting messages:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to retrieve messages'
@@ -35,7 +35,7 @@ router.post('/api/messages', requireAuth, (req, res) => {
     try {
         const { message_content, send_time, days_of_week, is_active } = req.body;
 
-        console.log('➕ Creating message:', {
+        console.log('Creating message:', {
             message_content: message_content?.substring(0, 50) + '...',
             send_time,
             days_of_week,
@@ -66,13 +66,13 @@ router.post('/api/messages', requireAuth, (req, res) => {
         if (is_active) {
             try {
                 schedulerService.addSchedule(messageId, send_time, days_of_week, message_content);
-                console.log(`📅 Schedule added for message ${messageId}`);
+                console.log(`Schedule added for message ${messageId}`);
             } catch (error) {
-                console.error('⚠️ Failed to schedule message:', error.message);
+                console.error('Failed to schedule message:', error.message);
             }
         }
 
-        console.log('✅ Message created with ID:', messageId);
+        console.log('Message created with ID:', messageId);
 
         res.json({
             success: true,
@@ -80,7 +80,7 @@ router.post('/api/messages', requireAuth, (req, res) => {
             message: SUCCESS.MESSAGE_CREATED
         });
     } catch (error) {
-        console.error('❌ Error creating message:', error);
+        console.error('Error creating message:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to create message'
@@ -94,7 +94,7 @@ router.put('/api/messages/:id', requireAuth, (req, res) => {
         const { id } = req.params;
         const { message_content, send_time, days_of_week, is_active } = req.body;
 
-        console.log(`✏️ Updating message ${id}:`, {
+        console.log(`Updating message ${id}:`, {
             message_content: message_content?.substring(0, 50),
             send_time,
             days_of_week,
@@ -135,23 +135,23 @@ router.put('/api/messages/:id', requireAuth, (req, res) => {
                     updatedMessage.days_of_week,
                     updatedMessage.message_content
                 );
-                console.log(`📅 Schedule updated for message ${id}`);
+                console.log(`Schedule updated for message ${id}`);
             } catch (error) {
-                console.error('⚠️ Failed to update schedule:', error.message);
+                console.error('Failed to update schedule:', error.message);
             }
         } else {
             // Remove from scheduler if deactivated
             schedulerService.removeSchedule(parseInt(id));
         }
 
-        console.log('✅ Message updated:', id);
+        console.log('Message updated:', id);
 
         res.json({
             success: true,
             message: SUCCESS.MESSAGE_UPDATED
         });
     } catch (error) {
-        console.error('❌ Error updating message:', error);
+        console.error('Error updating message:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to update message'
@@ -164,7 +164,7 @@ router.delete('/api/messages/:id', requireAuth, (req, res) => {
     try {
         const { id } = req.params;
 
-        console.log(`🗑️ Deleting message ${id}`);
+        console.log(`Deleting message ${id}`);
 
         // Check if message exists
         const message = messageService.getMessageById(parseInt(id));
@@ -181,14 +181,14 @@ router.delete('/api/messages/:id', requireAuth, (req, res) => {
         // Delete from database
         messageService.deleteMessage(parseInt(id));
 
-        console.log('✅ Message deleted:', id);
+        console.log('Message deleted:', id);
 
         res.json({
             success: true,
             message: SUCCESS.MESSAGE_DELETED
         });
     } catch (error) {
-        console.error('❌ Error deleting message:', error);
+        console.error('Error deleting message:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to delete message'
@@ -201,7 +201,7 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
     try {
         const { id } = req.params;
 
-        console.log(`🔄 Toggling message ${id}`);
+        console.log(`Toggling message ${id}`);
 
         // Get current message
         const message = messageService.getMessageById(parseInt(id));
@@ -226,17 +226,17 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
                     message.days_of_week,
                     message.message_content
                 );
-                console.log(`📅 Schedule activated for message ${id}`);
+                console.log(`Schedule activated for message ${id}`);
             } catch (error) {
-                console.error('⚠️ Failed to activate schedule:', error.message);
+                console.error('Failed to activate schedule:', error.message);
             }
         } else {
             // Deactivate: remove from scheduler
             schedulerService.removeSchedule(parseInt(id));
-            console.log(`📅 Schedule deactivated for message ${id}`);
+            console.log(`Schedule deactivated for message ${id}`);
         }
 
-        console.log(`✅ Message toggled to ${newStatus ? 'active' : 'inactive'}:`, id);
+        console.log(`Message toggled to ${newStatus ? 'active' : 'inactive'}:`, id);
 
         res.json({
             success: true,
@@ -244,7 +244,7 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
             message: SUCCESS.MESSAGE_UPDATED
         });
     } catch (error) {
-        console.error('❌ Error toggling message:', error);
+        console.error('Error toggling message:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to toggle message'
@@ -255,14 +255,14 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
 // GET /api/whatsapp/status - WhatsApp connection status
 router.get('/api/whatsapp/status', requireAuth, (req, res) => {
     try {
-        console.log('📱 Getting WhatsApp status');
+        console.log('Getting WhatsApp status');
         const connected = whatsappService.isConnected();
 
         res.json({
             connected: connected
         });
     } catch (error) {
-        console.error('❌ Error getting WhatsApp status:', error);
+        console.error('Error getting WhatsApp status:', error);
         res.json({
             connected: false
         });
@@ -272,7 +272,7 @@ router.get('/api/whatsapp/status', requireAuth, (req, res) => {
 // GET /api/whatsapp/groups - Get list of available groups
 router.get('/api/whatsapp/groups', requireAuth, async (req, res) => {
     try {
-        console.log('📱 Getting WhatsApp groups');
+        console.log('Getting WhatsApp groups');
 
         if (!whatsappService.isConnected()) {
             return res.status(400).json({
@@ -283,14 +283,14 @@ router.get('/api/whatsapp/groups', requireAuth, async (req, res) => {
 
         const groups = await whatsappService.getGroups();
 
-        console.log(`📱 Found ${groups.length} groups`);
+        console.log(`Found ${groups.length} groups`);
 
         res.json({
             success: true,
             groups: groups
         });
     } catch (error) {
-        console.error('❌ Error getting groups:', error);
+        console.error('Error getting groups:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to get groups'
@@ -310,18 +310,18 @@ router.post('/api/whatsapp/set-group', requireAuth, (req, res) => {
             });
         }
 
-        console.log('📱 Setting target group:', groupId);
+        console.log('Setting target group:', groupId);
 
         whatsappService.setTargetGroup(groupId);
 
-        console.log('✅ Target group set. Update TARGET_GROUP_ID in .env to persist this setting.');
+        console.log('Target group set. Update TARGET_GROUP_ID in .env to persist this setting.');
 
         res.json({
             success: true,
             message: 'Target group set successfully. Update .env file to persist this setting.'
         });
     } catch (error) {
-        console.error('❌ Error setting target group:', error);
+        console.error('Error setting target group:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to set target group'
@@ -341,18 +341,18 @@ router.post('/api/whatsapp/test', requireAuth, async (req, res) => {
             });
         }
 
-        console.log('📤 Sending test message:', message?.substring(0, 50));
+        console.log('Sending test message:', message?.substring(0, 50));
 
         await whatsappService.sendMessageToGroup(message);
 
-        console.log('✅ Test message sent successfully');
+        console.log('Test message sent successfully');
 
         res.json({
             success: true,
             message: SUCCESS.MESSAGE_SENT
         });
     } catch (error) {
-        console.error('❌ Error sending test message:', error);
+        console.error('Error sending test message:', error);
         res.status(500).json({
             success: false,
             error: error.message || 'Failed to send test message'
@@ -363,7 +363,7 @@ router.post('/api/whatsapp/test', requireAuth, async (req, res) => {
 // GET /api/schedule/next - Get next execution times
 router.get('/api/schedule/next', requireAuth, (req, res) => {
     try {
-        console.log('📅 Getting next execution times');
+        console.log('Getting next execution times');
 
         // Get all active messages
         const activeMessages = messageService.getAllMessages().filter(m => m.is_active);
@@ -378,7 +378,7 @@ router.get('/api/schedule/next', requireAuth, (req, res) => {
 
         res.json(nextTimes);
     } catch (error) {
-        console.error('❌ Error getting next execution times:', error);
+        console.error('Error getting next execution times:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to get execution times'

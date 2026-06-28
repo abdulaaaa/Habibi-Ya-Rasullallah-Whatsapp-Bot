@@ -18,11 +18,11 @@ router.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        console.log('🔐 Login Attempt:', { username, password: '***' });
+        console.log('Login Attempt:', { username, password: '***' });
 
         // Validate input
         if (!username || !password) {
-            console.log('❌ Login Failed: Missing credentials');
+            console.log('Login Failed: Missing credentials');
             return res.status(400).json({
                 success: false,
                 error: 'Username and password are required'
@@ -32,7 +32,7 @@ router.post('/api/auth/login', async (req, res) => {
         // Check username
         const validUsername = process.env.ADMIN_USERNAME;
         if (username !== validUsername) {
-            console.log('❌ Login Failed: Invalid username');
+            console.log('Login Failed: Invalid username');
             return res.status(401).json({
                 success: false,
                 error: ERRORS.INVALID_CREDENTIALS
@@ -44,7 +44,7 @@ router.post('/api/auth/login', async (req, res) => {
         const isValidPassword = await bcrypt.compare(password, passwordHash);
 
         if (!isValidPassword) {
-            console.log('❌ Login Failed: Invalid password');
+            console.log('Login Failed: Invalid password');
             return res.status(401).json({
                 success: false,
                 error: ERRORS.INVALID_CREDENTIALS
@@ -55,14 +55,14 @@ router.post('/api/auth/login', async (req, res) => {
         req.session.isAuthenticated = true;
         req.session.username = username;
 
-        console.log('✅ Login Success:', username);
+        console.log('Login Success:', username);
 
         return res.json({
             success: true,
             message: SUCCESS.LOGIN
         });
     } catch (error) {
-        console.error('❌ Login error:', error);
+        console.error('Login error:', error);
         return res.status(500).json({
             success: false,
             error: ERRORS.SERVER_ERROR
@@ -76,14 +76,14 @@ router.post('/api/auth/logout', (req, res) => {
 
     req.session.destroy((err) => {
         if (err) {
-            console.error('❌ Logout error:', err);
+            console.error('Logout error:', err);
             return res.status(500).json({
                 success: false,
                 error: 'Failed to logout'
             });
         }
 
-        console.log('👋 User logged out:', username);
+        console.log('User logged out:', username);
         res.json({
             success: true,
             message: SUCCESS.LOGOUT

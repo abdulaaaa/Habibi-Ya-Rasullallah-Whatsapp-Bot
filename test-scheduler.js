@@ -5,7 +5,7 @@
 
 import * as schedulerService from './src/services/schedulerService.js';
 
-console.log('🧪 Testing Scheduler Service\n');
+console.log('Testing Scheduler Service\n');
 
 // Initialize (without WhatsApp/Message services for now)
 schedulerService.initialize({
@@ -22,7 +22,7 @@ try {
         'اللّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ\n\nPeace and blessings be upon Prophet Muhammad ﷺ'
     );
 } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('Error:', error.message);
 }
 
 console.log('\n--- Test 2: Add a schedule for Mon, Wed, Fri at 18:00 ---');
@@ -34,7 +34,7 @@ try {
         'Salawat message for Mon, Wed, Fri'
     );
 } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('Error:', error.message);
 }
 
 console.log('\n--- Test 3: Add INVALID time (should fail) ---');
@@ -46,7 +46,7 @@ try {
         'This should fail'
     );
 } catch (error) {
-    console.error('✅ Expected error:', error.message);
+    console.error('Expected error:', error.message);
 }
 
 console.log('\n--- Test 4: Update schedule for message 1 ---');
@@ -58,22 +58,22 @@ try {
         'Updated message content'
     );
 } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('Error:', error.message);
 }
 
 console.log('\n--- Test 5: Check scheduler status ---');
 const status = schedulerService.getStatus();
-console.log('📊 Status:', status);
+console.log('Status:', status);
 
 console.log('\n--- Test 6: Add a test schedule (sends every minute) ---');
 console.log('⚠️ This will log a message EVERY MINUTE for testing');
 console.log('⚠️ Press Ctrl+C to stop\n');
 
-const testId = schedulerService.addTestSchedule('🧪 Test message - every minute');
+const testId = schedulerService.addTestSchedule('Test message - every minute');
 
-console.log('\n⏰ Waiting for scheduled messages...');
-console.log('💡 You should see a message every minute');
-console.log('💡 Press Ctrl+C to stop\n');
+console.log('\nWaiting for scheduled messages...');
+console.log('You should see a message every minute');
+console.log('Press Ctrl+C to stop\n');
 
 // Keep process alive to see scheduled messages
 setInterval(() => {
@@ -82,8 +82,8 @@ setInterval(() => {
 
 // Cleanup on exit
 process.on('SIGINT', () => {
-    console.log('\n\n🛑 Stopping all schedules...');
+    console.log('\n\nStopping all schedules...');
     schedulerService.stopAllSchedules();
-    console.log('👋 Goodbye!');
+    console.log('Goodbye!');
     process.exit(0);
 });
