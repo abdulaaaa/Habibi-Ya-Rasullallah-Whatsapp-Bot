@@ -1,0 +1,20 @@
+{
+  "name": "habibi-ya-rasullallah-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "**Habibi Ya Rasulallah** — a free, open-source WhatsApp bot that sends salawat upon the Prophet ﷺ to your group, on schedule. Code written for good, for the sake of Allah. No ads, no profit, ever.",
+  "homepage": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot#readme",
+  "bugs": {
+    "url": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
