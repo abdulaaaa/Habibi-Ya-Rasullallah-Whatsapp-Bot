@@ -1,12 +1,12 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
+const router = Router();
 
 // Import route modules (will be created next)
-const authRoutes = require('./auth');
-const dashboardRoutes = require('./dashboard');
+import authRoutes from './auth.js';
+import dashboardRoutes from './dashboard.js';
 
 // Mount routes
 router.use('/', authRoutes);
 router.use('/', dashboardRoutes);
 
-module.exports = router;
+export default router;

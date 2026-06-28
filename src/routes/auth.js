@@ -1,7 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const { requireGuest } = require('../middleware/auth');
-const constants = require('../config/constants');
+import { Router } from 'express';
+const router = Router();
+import { requireGuest } from '../middleware/auth.js';
+import { SUCCESS } from '../config/constants.js';
 
 // Login page
 router.get('/', requireGuest, (req, res) => {
@@ -29,7 +29,7 @@ router.post('/api/auth/login', (req, res) => {
 
         return res.json({
             success: true,
-            message: constants.SUCCESS.LOGIN
+            message: SUCCESS.LOGIN
         });
     }
 
@@ -57,9 +57,9 @@ router.post('/api/auth/logout', (req, res) => {
         console.log('👋 User logged out:', username);
         res.json({
             success: true,
-            message: constants.SUCCESS.LOGOUT
+            message: SUCCESS.LOGOUT
         });
     });
 });
 
-module.exports = router;
+export default router;

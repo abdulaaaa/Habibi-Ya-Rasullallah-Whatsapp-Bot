@@ -1,7 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
-const constants = require('../config/constants');
+import { Router } from 'express';
+const router = Router();
+import { requireAuth } from '../middleware/auth.js';
+import { SUCCESS } from '../config/constants.js';
 
 // Dashboard page
 router.get('/dashboard', requireAuth, (req, res) => {
@@ -80,7 +80,7 @@ router.post('/api/messages', requireAuth, (req, res) => {
     res.json({
         success: true,
         messageId: newMessage.id,
-        message: constants.SUCCESS.MESSAGE_CREATED
+        message: SUCCESS.MESSAGE_CREATED
     });
 });
 
@@ -116,7 +116,7 @@ router.put('/api/messages/:id', requireAuth, (req, res) => {
 
     res.json({
         success: true,
-        message: constants.SUCCESS.MESSAGE_UPDATED
+        message: SUCCESS.MESSAGE_UPDATED
     });
 });
 
@@ -141,7 +141,7 @@ router.delete('/api/messages/:id', requireAuth, (req, res) => {
 
     res.json({
         success: true,
-        message: constants.SUCCESS.MESSAGE_DELETED
+        message: SUCCESS.MESSAGE_DELETED
     });
 });
 
@@ -168,7 +168,7 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
     res.json({
         success: true,
         is_active: message.is_active,
-        message: constants.SUCCESS.MESSAGE_UPDATED
+        message: SUCCESS.MESSAGE_UPDATED
     });
 });
 
@@ -195,7 +195,7 @@ router.post('/api/whatsapp/test', requireAuth, (req, res) => {
 
     res.json({
         success: true,
-        message: constants.SUCCESS.MESSAGE_SENT
+        message: SUCCESS.MESSAGE_SENT
     });
 });
 
@@ -215,4 +215,4 @@ router.get('/api/schedule/next', requireAuth, (req, res) => {
     res.json(nextTimes);
 });
 
-module.exports = router;
+export default router;
