@@ -18,7 +18,15 @@ function initializeClient() {
 
     client.once("ready", () => {
         connected = true;
-        console.log("Client is ready");
+        console.log("✅ WhatsApp client is ready");
+
+        // Load target group from environment
+        if (process.env.TARGET_GROUP_ID) {
+            targetGroupId = process.env.TARGET_GROUP_ID;
+            console.log("📱 Target group loaded from config:", targetGroupId);
+        } else {
+            console.log("⚠️ No target group configured. Use /api/whatsapp/groups to list groups and set TARGET_GROUP_ID in .env");
+        }
     });
 
     client.on("disconnected", (reason) => {

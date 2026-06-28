@@ -269,6 +269,66 @@ router.get('/api/whatsapp/status', requireAuth, (req, res) => {
     }
 });
 
+// GET /api/whatsapp/groups - Get list of available groups
+router.get('/api/whatsapp/groups', requireAuth, async (req, res) => {
+    try {
+        console.log('📱 Getting WhatsApp groups');
+
+        if (!whatsappService.isConnected()) {
+            return res.status(400).json({
+                success: false,
+                error: 'WhatsApp is not connected. Please scan QR code first.'
+            });
+        }
+
+        const groups = await whatsappService.getGroups();
+
+        console.log(`📱 Found ${groups.length} groups`);
+
+        res.json({
+            success: true,
+            groups: groups
+        });
+    } catch (error) {
+        console.error('❌ Error getting groups:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get groups'
+        });
+    }
+});
+
+// POST /api/whatsapp/set-group - Set target group
+router.post('/api/whatsapp/set-group', requireAuth, (req, res) => {
+    try {
+        const { groupId } = req.body;
+
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Group ID is required'
+            });
+        }
+
+        console.log('📱 Setting target group:', groupId);
+
+        whatsappService.setTargetGroup(groupId);
+
+        console.log('✅ Target group set. Update TARGET_GROUP_ID in .env to persist this setting.');
+
+        res.json({
+            success: true,
+            message: 'Target group set successfully. Update .env file to persist this setting.'
+        });
+    } catch (error) {
+        console.error('❌ Error setting target group:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to set target group'
+        });
+    }
+});
+
 // POST /api/whatsapp/test - Send test message
 router.post('/api/whatsapp/test', requireAuth, async (req, res) => {
     try {
