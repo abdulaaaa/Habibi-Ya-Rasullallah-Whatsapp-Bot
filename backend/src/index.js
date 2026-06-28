@@ -2,6 +2,7 @@ import express, { json, urlencoded } from "express";
 import session from "express-session";
 import { join } from "path";
 import dotenv from "dotenv";
+import cors from "cors";
 dotenv.config();
 
 // Import services
@@ -11,12 +12,18 @@ import * as schedulerService from './services/schedulerService.js';
 
 const app = express();
 
+// CORS Configuration - Allow frontend from GitHub Pages
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:8080', // Will be GitHub Pages URL
+    credentials: true, // Allow cookies
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
 // Middleware
 app.use(json());
 app.use(urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.set("view engine", "ejs");
-app.set("views", "views");
 
 // Session
 app.use(
@@ -28,6 +35,7 @@ app.use(
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             secure: process.env.NODE_ENV === "production", // HTTPS only in production
+            sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Required for CORS
         },
     }),
 );
