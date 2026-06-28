@@ -1,7 +1,8 @@
 import { Router } from 'express';
 const router = Router();
 import { requireGuest } from '../middleware/auth.js';
-import { SUCCESS } from '../config/constants.js';
+import { SUCCESS, ERRORS } from '../config/constants.js';
+import bcrypt from 'bcryptjs';
 
 // Login page
 router.get('/', requireGuest, (req, res) => {
@@ -9,36 +10,64 @@ router.get('/', requireGuest, (req, res) => {
 });
 
 // ==========================================
-// MOCK AUTH APIS (Hour 2-3)
-// These will be replaced with real auth in Hour 6-7
+// AUTHENTICATION APIS
 // ==========================================
 
-// MOCK Login API - Accepts ANY credentials for now
-router.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body;
+// Login API - Real authentication with bcrypt
+router.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
 
-    // MOCK: Log the attempt
-    console.log('🔐 Mock Login Attempt:', { username, password: '***' });
+        console.log('🔐 Login Attempt:', { username, password: '***' });
 
-    // MOCK: Accept any credentials
-    if (username && password) {
+        // Validate input
+        if (!username || !password) {
+            console.log('❌ Login Failed: Missing credentials');
+            return res.status(400).json({
+                success: false,
+                error: 'Username and password are required'
+            });
+        }
+
+        // Check username
+        const validUsername = process.env.ADMIN_USERNAME;
+        if (username !== validUsername) {
+            console.log('❌ Login Failed: Invalid username');
+            return res.status(401).json({
+                success: false,
+                error: ERRORS.INVALID_CREDENTIALS
+            });
+        }
+
+        // Check password with bcrypt
+        const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+        const isValidPassword = await bcrypt.compare(password, passwordHash);
+
+        if (!isValidPassword) {
+            console.log('❌ Login Failed: Invalid password');
+            return res.status(401).json({
+                success: false,
+                error: ERRORS.INVALID_CREDENTIALS
+            });
+        }
+
+        // Successful login
         req.session.isAuthenticated = true;
         req.session.username = username;
 
-        console.log('✅ Mock Login Success:', username);
+        console.log('✅ Login Success:', username);
 
         return res.json({
             success: true,
             message: SUCCESS.LOGIN
         });
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        return res.status(500).json({
+            success: false,
+            error: ERRORS.SERVER_ERROR
+        });
     }
-
-    // If no credentials provided
-    console.log('❌ Mock Login Failed: Missing credentials');
-    return res.status(400).json({
-        success: false,
-        error: 'Username and password are required'
-    });
 });
 
 // Logout API

@@ -293,6 +293,76 @@ async function sendTestMessage() {
     }
 }
 
+// Show available WhatsApp groups
+async function showGroups() {
+    try {
+        const response = await fetch('/api/whatsapp/groups');
+        const data = await response.json();
+
+        if (!response.ok) {
+            showNotification(data.error || 'Failed to get groups', 'warning');
+            return;
+        }
+
+        const groups = data.groups;
+
+        if (groups.length === 0) {
+            showNotification('No groups found. Make sure you are a member of at least one WhatsApp group.', 'info');
+            return;
+        }
+
+        // Build a list of groups to show
+        let groupsList = 'Available WhatsApp Groups:\n\n';
+        groups.forEach((group, index) => {
+            groupsList += `${index + 1}. ${group.name}\n   ID: ${group.id}\n\n`;
+        });
+        groupsList += '\nCopy the Group ID and paste it in the .env file as TARGET_GROUP_ID, then restart the server.\n\n';
+        groupsList += 'Or click a group below to set it temporarily (until restart):';
+
+        // Show in alert (simple version)
+        alert(groupsList);
+
+        // Prompt to select group
+        const selection = prompt(`Enter the number (1-${groups.length}) of the group you want to use:`);
+        if (selection) {
+            const index = parseInt(selection) - 1;
+            if (index >= 0 && index < groups.length) {
+                await setTargetGroup(groups[index].id, groups[index].name);
+            } else {
+                showNotification('Invalid selection', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error getting groups:', error);
+        showNotification('Error getting groups', 'danger');
+    }
+}
+
+// Set target group
+async function setTargetGroup(groupId, groupName) {
+    try {
+        const response = await fetch('/api/whatsapp/set-group', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ groupId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('targetGroup').textContent = groupName || groupId;
+            showNotification('Target group set successfully! Remember to update .env file to make it permanent.', 'success');
+        } else {
+            showNotification(data.error || 'Failed to set target group', 'danger');
+        }
+    } catch (error) {
+        console.error('Error setting target group:', error);
+        showNotification('Error setting target group', 'danger');
+    }
+}
+
 // Logout
 async function logout() {
     try {
