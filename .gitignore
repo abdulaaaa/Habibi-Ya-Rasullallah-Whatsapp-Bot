@@ -4,3 +4,5 @@ data/
 logs/
 *.log
 .DS_Store
+.wwebjs_auth/
+db.sqlite
