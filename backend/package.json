@@ -1,0 +1,38 @@
+{
+  "name": "habibi-ya-rasullallah-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot for scheduled salawat messages",
+  "homepage": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot#readme",
+  "bugs": {
+    "url": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "node-cron": "^3.0.3",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
