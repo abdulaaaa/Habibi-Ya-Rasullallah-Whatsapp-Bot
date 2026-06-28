@@ -1,7 +1,7 @@
 {
   "name": "habibi-ya-rasullallah-whatsapp-bot",
   "version": "1.0.0",
-  "description": "**Habibi Ya Rasulallah** — a free, open-source WhatsApp bot that sends salawat upon the Prophet ﷺ to your group, on schedule. Code written for good, for the sake of Allah. No ads, no profit, ever.",
+  "description": "WhatsApp bot for scheduled salawat messages",
   "homepage": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot#readme",
   "bugs": {
     "url": "https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot/issues"
@@ -10,11 +10,28 @@
     "type": "git",
     "url": "git+https://github.com/abdulaaaa/Habibi-Ya-Rasullallah-Whatsapp-Bot.git"
   },
-  "license": "ISC",
+  "license": "MIT",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0",
+    "node-cron": "^3.0.3",
+    "better-sqlite3": "^9.2.2",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "ejs": "^3.1.9"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
