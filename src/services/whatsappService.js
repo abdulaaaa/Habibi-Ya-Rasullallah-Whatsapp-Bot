@@ -4,9 +4,10 @@ import qrcode from "qrcode-terminal";
 
 let client = null;
 let connected = false;
+let targetGroupId = null; // Will be set from database config
 
 function initializeClient() {
-    const client = new Client({
+    client = new Client({
         puppeteer: {
             args: ["--no-sandbox", "--disable-setuid-sandbox"],
         },
@@ -32,7 +33,6 @@ function initializeClient() {
 
     client.on("authenticated", () => {
         console.log("✅ Authenticated successfully");
-        currentQR = null;
     });
 
     client.on("auth_failure", (msg) => {
@@ -44,4 +44,75 @@ function initializeClient() {
     return client;
 }
 
-export { initializeClient };
+/**
+ * Check if WhatsApp is connected
+ * @returns {boolean} Connection status
+ */
+function isConnected() {
+    return connected;
+}
+
+/**
+ * Get list of all groups
+ * @returns {Promise<Array>} List of groups
+ */
+async function getGroups() {
+    if (!client || !connected) {
+        throw new Error('WhatsApp not connected');
+    }
+
+    const chats = await client.getChats();
+    const groups = chats.filter(chat => chat.isGroup);
+
+    return groups.map(group => ({
+        id: group.id._serialized,
+        name: group.name
+    }));
+}
+
+/**
+ * Set target group ID
+ * @param {string} groupId - Group ID to send messages to
+ */
+function setTargetGroup(groupId) {
+    targetGroupId = groupId;
+    console.log('📱 Target group set:', groupId);
+}
+
+/**
+ * Send message to target group
+ * @param {string} message - Message content to send
+ * @returns {Promise<void>}
+ */
+async function sendMessageToGroup(message) {
+    if (!client || !connected) {
+        throw new Error('WhatsApp not connected');
+    }
+
+    if (!targetGroupId) {
+        throw new Error('Target group not set');
+    }
+
+    await client.sendMessage(targetGroupId, message);
+    console.log('✅ Message sent to group');
+}
+
+/**
+ * Send scheduled message (called by scheduler)
+ * @param {number} messageId - Message ID (for logging)
+ * @param {string} content - Message content
+ * @returns {Promise<void>}
+ */
+async function sendScheduledMessage(messageId, content) {
+    console.log(`📤 Sending scheduled message ${messageId}...`);
+    await sendMessageToGroup(content);
+}
+
+export {
+    initializeClient,
+    isConnected,
+    getGroups,
+    setTargetGroup,
+    sendMessageToGroup,
+    sendScheduledMessage
+};
