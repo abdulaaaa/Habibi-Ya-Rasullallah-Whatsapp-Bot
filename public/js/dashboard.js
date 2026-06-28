@@ -1,10 +1,13 @@
 // Dashboard JavaScript
 
 let currentEditId = null;
-const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+let messageModal = null;
 
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Bootstrap modal after DOM is ready
+    messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+
     checkWhatsAppStatus();
     loadMessages();
 
