@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // Check WhatsApp connection status
 async function checkWhatsAppStatus() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/status');
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/status`, {
+            credentials: 'include'
+        });
         const data = await response.json();
 
         const statusBadge = document.getElementById('whatsappStatus');
@@ -41,7 +43,9 @@ async function loadMessages() {
     const container = document.getElementById('messagesContainer');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/messages');
+        const response = await fetch(`${API_BASE_URL}/api/messages`, {
+            credentials: 'include'
+        });
         const messages = await response.json();
 
         if (messages.length === 0) {
@@ -131,7 +135,9 @@ function openAddModal() {
 // Edit message
 async function editMessage(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/messages');
+        const response = await fetch(`${API_BASE_URL}/api/messages`, {
+            credentials: 'include'
+        });
         const messages = await response.json();
         const msg = messages.find(m => m.id === id);
 
@@ -188,7 +194,9 @@ async function saveMessage() {
     };
 
     try {
-        const url = currentEditId ? `/api/messages/${currentEditId}` : '/api/messages';
+        const url = currentEditId
+            ? `${API_BASE_URL}/api/messages/${currentEditId}`
+            : `${API_BASE_URL}/api/messages`;
         const method = currentEditId ? 'PUT' : 'POST';
 
         const response = await fetch(url, {
@@ -196,6 +204,7 @@ async function saveMessage() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         });
 
@@ -215,8 +224,9 @@ async function saveMessage() {
 // Toggle message active status
 async function toggleMessage(id) {
     try {
-        const response = await fetch(`/api/messages/${id}/toggle`, {
-            method: 'PATCH'
+        const response = await fetch(`${API_BASE_URL}/api/messages/${id}/toggle`, {
+            method: 'PATCH',
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -238,8 +248,9 @@ async function deleteMessage(id) {
     }
 
     try {
-        const response = await fetch(`/api/messages/${id}`, {
-            method: 'DELETE'
+        const response = await fetch(`${API_BASE_URL}/api/messages/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -276,11 +287,12 @@ async function sendTestMessage() {
     const testMessage = 'اللّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ\n\nPeace and blessings be upon Prophet Muhammad ﷺ';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/test', {
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/test`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ message: testMessage })
         });
 
@@ -298,7 +310,9 @@ async function sendTestMessage() {
 // Show available WhatsApp groups
 async function showGroups() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/groups');
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/groups`, {
+            credentials: 'include'
+        });
         const data = await response.json();
 
         if (!response.ok) {
@@ -343,11 +357,12 @@ async function showGroups() {
 // Set target group
 async function setTargetGroup(groupId, groupName) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/set-group', {
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/set-group`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ groupId })
         });
 
@@ -368,10 +383,15 @@ async function setTargetGroup(groupId, groupName) {
 // Logout
 async function logout() {
     try {
-        await fetch(`${API_BASE_URL}/api/auth/logout', { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        localStorage.removeItem('isAuthenticated');
         window.location.href = '/';
     } catch (error) {
         console.error('Logout error:', error);
+        localStorage.removeItem('isAuthenticated');
         window.location.href = '/';
     }
 }
@@ -400,3 +420,14 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Make functions available globally
+window.openAddModal = openAddModal;
+window.editMessage = editMessage;
+window.saveMessage = saveMessage;
+window.toggleMessage = toggleMessage;
+window.deleteMessage = deleteMessage;
+window.toggleAllDays = toggleAllDays;
+window.sendTestMessage = sendTestMessage;
+window.showGroups = showGroups;
+window.logout = logout;
