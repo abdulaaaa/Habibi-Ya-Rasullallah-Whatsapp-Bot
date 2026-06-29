@@ -36,8 +36,8 @@ RUN npm ci --only=production
 # Copy application code
 COPY . .
 
-# Create data directory for persistence
-RUN mkdir -p /app/.wwebjs_auth /app/data
+# Create data directory for persistence (single volume for Railway)
+RUN mkdir -p /app/data/.wwebjs_auth
 
 # Expose port
 EXPOSE 3000
