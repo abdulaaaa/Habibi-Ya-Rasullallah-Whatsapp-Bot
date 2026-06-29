@@ -4,11 +4,23 @@ import API_BASE_URL from "./../config.js";
 
 let currentEditId = null;
 let messageModal = null;
+let currentPrayerTimes = null;
+
+// Helper function to convert 24-hour time to 12-hour format with AM/PM and EST
+function formatTimeTo12Hour(time24) {
+    const [hour24, minute] = time24.split(':').map(Number);
+    const hour12 = hour24 % 12 || 12;
+    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${String(minute).padStart(2, '0')} ${ampm} EST`;
+}
 
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Bootstrap modal after DOM is ready
     messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+
+    // Setup schedule type toggle
+    setupScheduleTypeToggle();
 
     checkWhatsAppStatus();
     loadMessages();
@@ -17,10 +29,94 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkWhatsAppStatus, 30000);
 });
 
+// Setup toggle between fixed and prayer time schedules
+function setupScheduleTypeToggle() {
+    const scheduleTypeRadios = document.querySelectorAll('input[name="scheduleType"]');
+    const prayerNameSelect = document.getElementById('prayerName');
+
+    scheduleTypeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const fixedSection = document.getElementById('fixedTimeSection');
+            const prayerSection = document.getElementById('prayerTimeSection');
+            const sendTimeInput = document.getElementById('sendTime');
+
+            if (e.target.value === 'fixed') {
+                fixedSection.style.display = 'block';
+                prayerSection.style.display = 'none';
+                sendTimeInput.required = true;
+            } else {
+                fixedSection.style.display = 'none';
+                prayerSection.style.display = 'block';
+                sendTimeInput.required = false;
+                loadPrayerTimes();
+            }
+        });
+    });
+
+    // Update preview when prayer selection changes
+    prayerNameSelect.addEventListener('change', () => {
+        if (currentPrayerTimes) {
+            updatePrayerTimePreview();
+        }
+    });
+}
+
+// Load today's prayer times
+async function loadPrayerTimes() {
+    const previewDiv = document.getElementById('prayerTimePreview');
+    previewDiv.textContent = 'Loading prayer times...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/prayer-times`, {
+            credentials: 'include'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            currentPrayerTimes = data.times;
+            updatePrayerTimePreview();
+        } else {
+            previewDiv.textContent = 'Failed to load prayer times';
+        }
+    } catch (error) {
+        console.error('Error loading prayer times:', error);
+        previewDiv.textContent = 'Error loading prayer times';
+    }
+}
+
+// Update the prayer time preview text
+function updatePrayerTimePreview() {
+    const prayerName = document.getElementById('prayerName').value;
+    const previewDiv = document.getElementById('prayerTimePreview');
+
+    if (!currentPrayerTimes || !currentPrayerTimes[prayerName]) {
+        previewDiv.textContent = 'Prayer time not available';
+        return;
+    }
+
+    const prayerTime = currentPrayerTimes[prayerName];
+
+    // Calculate time + 10 minutes
+    const [hour, minute] = prayerTime.split(':').map(Number);
+    const totalMinutes = hour * 60 + minute + 10;
+    const newHour = Math.floor(totalMinutes / 60) % 24;
+    const newMinute = totalMinutes % 60;
+    const displayTime24 = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
+
+    // Format both times to 12-hour format with EST
+    const prayerTime12 = formatTimeTo12Hour(prayerTime);
+    const sendTime12 = formatTimeTo12Hour(displayTime24);
+
+    const prayerNameCap = prayerName.charAt(0).toUpperCase() + prayerName.slice(1);
+    previewDiv.textContent = `Today's ${prayerNameCap} is at ${prayerTime12}. Message will send at ${sendTime12}`;
+}
+
 // Check WhatsApp connection status
 async function checkWhatsAppStatus() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/status');
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/status`, {
+            credentials: 'include'
+        });
         const data = await response.json();
 
         const statusBadge = document.getElementById('whatsappStatus');
@@ -41,7 +137,9 @@ async function loadMessages() {
     const container = document.getElementById('messagesContainer');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/messages');
+        const response = await fetch(`${API_BASE_URL}/api/messages`, {
+            credentials: 'include'
+        });
         const messages = await response.json();
 
         if (messages.length === 0) {
@@ -77,6 +175,15 @@ function renderMessageCard(msg) {
     const hasArabic = /[\u0600-\u06FF]/.test(msg.message_content);
     const textClass = hasArabic ? 'rtl' : '';
 
+    // Format time display based on schedule type
+    let timeDisplay;
+    if (msg.schedule_type === 'prayer') {
+        const prayerNameCap = msg.prayer_name.charAt(0).toUpperCase() + msg.prayer_name.slice(1);
+        timeDisplay = `10 min after ${prayerNameCap}`;
+    } else {
+        timeDisplay = formatTimeTo12Hour(msg.send_time);
+    }
+
     return `
         <div class="message-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -91,7 +198,7 @@ function renderMessageCard(msg) {
             <div class="d-flex justify-content-between align-items-center">
                 <div class="schedule-badge">
                     <i class="bi bi-clock"></i>
-                    <span>${msg.send_time} - ${days}</span>
+                    <span>${timeDisplay} - ${days}</span>
                 </div>
 
                 <div class="message-actions">
@@ -126,12 +233,20 @@ function openAddModal() {
     document.getElementById('messageForm').reset();
     document.getElementById('messageId').value = '';
     document.getElementById('isActive').checked = true;
+
+    // Reset to fixed schedule type
+    document.getElementById('scheduleFixed').checked = true;
+    document.getElementById('fixedTimeSection').style.display = 'block';
+    document.getElementById('prayerTimeSection').style.display = 'none';
+    document.getElementById('sendTime').required = true;
 }
 
 // Edit message
 async function editMessage(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/messages');
+        const response = await fetch(`${API_BASE_URL}/api/messages`, {
+            credentials: 'include'
+        });
         const messages = await response.json();
         const msg = messages.find(m => m.id === id);
 
@@ -141,8 +256,24 @@ async function editMessage(id) {
         document.getElementById('modalTitle').textContent = 'Edit Message';
         document.getElementById('messageId').value = id;
         document.getElementById('messageContent').value = msg.message_content;
-        document.getElementById('sendTime').value = msg.send_time;
         document.getElementById('isActive').checked = msg.is_active;
+
+        // Set schedule type
+        const scheduleType = msg.schedule_type || 'fixed';
+        if (scheduleType === 'prayer') {
+            document.getElementById('schedulePrayer').checked = true;
+            document.getElementById('fixedTimeSection').style.display = 'none';
+            document.getElementById('prayerTimeSection').style.display = 'block';
+            document.getElementById('sendTime').required = false;
+            document.getElementById('prayerName').value = msg.prayer_name;
+            await loadPrayerTimes();
+        } else {
+            document.getElementById('scheduleFixed').checked = true;
+            document.getElementById('fixedTimeSection').style.display = 'block';
+            document.getElementById('prayerTimeSection').style.display = 'none';
+            document.getElementById('sendTime').required = true;
+            document.getElementById('sendTime').value = msg.send_time;
+        }
 
         // Set days checkboxes
         document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
@@ -166,15 +297,15 @@ async function editMessage(id) {
 // Save message (create or update)
 async function saveMessage() {
     const content = document.getElementById('messageContent').value.trim();
-    const time = document.getElementById('sendTime').value;
     const isActive = document.getElementById('isActive').checked;
+    const scheduleType = document.querySelector('input[name="scheduleType"]:checked').value;
 
     // Get selected days
     const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked'))
         .map(cb => cb.value);
 
-    if (!content || !time || selectedDays.length === 0) {
-        showNotification('Please fill all fields and select at least one day', 'warning');
+    if (!content || selectedDays.length === 0) {
+        showNotification('Please fill message content and select at least one day', 'warning');
         return;
     }
 
@@ -182,13 +313,28 @@ async function saveMessage() {
 
     const data = {
         message_content: content,
-        send_time: time,
         days_of_week: daysOfWeek,
-        is_active: isActive ? 1 : 0
+        is_active: isActive ? 1 : 0,
+        schedule_type: scheduleType
     };
 
+    // Add schedule-specific fields
+    if (scheduleType === 'fixed') {
+        const time = document.getElementById('sendTime').value;
+        if (!time) {
+            showNotification('Please select a send time', 'warning');
+            return;
+        }
+        data.send_time = time;
+    } else {
+        data.prayer_name = document.getElementById('prayerName').value;
+        data.prayer_offset = 10; // Fixed at 10 minutes
+    }
+
     try {
-        const url = currentEditId ? `/api/messages/${currentEditId}` : '/api/messages';
+        const url = currentEditId
+            ? `${API_BASE_URL}/api/messages/${currentEditId}`
+            : `${API_BASE_URL}/api/messages`;
         const method = currentEditId ? 'PUT' : 'POST';
 
         const response = await fetch(url, {
@@ -196,6 +342,7 @@ async function saveMessage() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         });
 
@@ -204,7 +351,8 @@ async function saveMessage() {
             messageModal.hide();
             loadMessages();
         } else {
-            showNotification('Failed to save message', 'danger');
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Failed to save message', 'danger');
         }
     } catch (error) {
         console.error('Error saving message:', error);
@@ -215,8 +363,9 @@ async function saveMessage() {
 // Toggle message active status
 async function toggleMessage(id) {
     try {
-        const response = await fetch(`/api/messages/${id}/toggle`, {
-            method: 'PATCH'
+        const response = await fetch(`${API_BASE_URL}/api/messages/${id}/toggle`, {
+            method: 'PATCH',
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -238,8 +387,9 @@ async function deleteMessage(id) {
     }
 
     try {
-        const response = await fetch(`/api/messages/${id}`, {
-            method: 'DELETE'
+        const response = await fetch(`${API_BASE_URL}/api/messages/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -273,19 +423,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Send test message
 async function sendTestMessage() {
-    const testMessage = 'اللّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ\n\nPeace and blessings be upon Prophet Muhammad ﷺ';
+    const testMessageContent = document.getElementById('testMessageContent').value.trim();
+
+    if (!testMessageContent) {
+        alert('Please enter a message to send');
+        return;
+    }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/test', {
+        const response = await fetch(`${API_BASE_URL}/api/whatsapp/test`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: testMessage })
+            credentials: 'include',
+            body: JSON.stringify({ message: testMessageContent })
         });
 
         if (response.ok) {
             showNotification('Test message sent successfully!', 'success');
+            document.getElementById('testMessageContent').value = '';
         } else {
             showNotification('Failed to send test message', 'danger');
         }
@@ -295,83 +452,18 @@ async function sendTestMessage() {
     }
 }
 
-// Show available WhatsApp groups
-async function showGroups() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/groups');
-        const data = await response.json();
-
-        if (!response.ok) {
-            showNotification(data.error || 'Failed to get groups', 'warning');
-            return;
-        }
-
-        const groups = data.groups;
-
-        if (groups.length === 0) {
-            showNotification('No groups found. Make sure you are a member of at least one WhatsApp group.', 'info');
-            return;
-        }
-
-        // Build a list of groups to show
-        let groupsList = 'Available WhatsApp Groups:\n\n';
-        groups.forEach((group, index) => {
-            groupsList += `${index + 1}. ${group.name}\n   ID: ${group.id}\n\n`;
-        });
-        groupsList += '\nCopy the Group ID and paste it in the .env file as TARGET_GROUP_ID, then restart the server.\n\n';
-        groupsList += 'Or click a group below to set it temporarily (until restart):';
-
-        // Show in alert (simple version)
-        alert(groupsList);
-
-        // Prompt to select group
-        const selection = prompt(`Enter the number (1-${groups.length}) of the group you want to use:`);
-        if (selection) {
-            const index = parseInt(selection) - 1;
-            if (index >= 0 && index < groups.length) {
-                await setTargetGroup(groups[index].id, groups[index].name);
-            } else {
-                showNotification('Invalid selection', 'danger');
-            }
-        }
-    } catch (error) {
-        console.error('Error getting groups:', error);
-        showNotification('Error getting groups', 'danger');
-    }
-}
-
-// Set target group
-async function setTargetGroup(groupId, groupName) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/whatsapp/set-group', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ groupId })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            document.getElementById('targetGroup').textContent = groupName || groupId;
-            showNotification('Target group set successfully! Remember to update .env file to make it permanent.', 'success');
-        } else {
-            showNotification(data.error || 'Failed to set target group', 'danger');
-        }
-    } catch (error) {
-        console.error('Error setting target group:', error);
-        showNotification('Error setting target group', 'danger');
-    }
-}
-
 // Logout
 async function logout() {
     try {
-        await fetch(`${API_BASE_URL}/api/auth/logout', { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        localStorage.removeItem('isAuthenticated');
         window.location.href = '/';
     } catch (error) {
         console.error('Logout error:', error);
+        localStorage.removeItem('isAuthenticated');
         window.location.href = '/';
     }
 }
@@ -400,3 +492,13 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Make functions available globally
+window.openAddModal = openAddModal;
+window.editMessage = editMessage;
+window.saveMessage = saveMessage;
+window.toggleMessage = toggleMessage;
+window.deleteMessage = deleteMessage;
+window.toggleAllDays = toggleAllDays;
+window.sendTestMessage = sendTestMessage;
+window.logout = logout;

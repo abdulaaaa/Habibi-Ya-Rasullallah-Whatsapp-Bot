@@ -11,25 +11,36 @@ function getMessageById(id) {
 
 function createMessage(data) {
     const stmt = db.prepare(`
-        INSERT INTO messages (message_content, send_time, days_of_week)
-        VALUES (?, ?, ?)
+        INSERT INTO messages (message_content, send_time, days_of_week, schedule_type, prayer_name, prayer_offset)
+        VALUES (?, ?, ?, ?, ?, ?)
         `);
     const result = stmt.run(
         data.messageContent,
-        data.sendTime,
+        data.sendTime || null,  // Null for prayer-based schedules
         data.daysOfWeek,
+        data.scheduleType || 'fixed',
+        data.prayerName || null,
+        data.prayerOffset || 10
     );
     return result.lastInsertRowid;
 }
 
-function updateMessage(id, messageContent, sendTime, daysOfWeek) {
+function updateMessage(id, data) {
     const stmt = db.prepare(`
     UPDATE messages
-    SET message_content = ?, send_time = ?, days_of_week = ?, updated_at = CURRENT_TIMESTAMP
+    SET message_content = ?, send_time = ?, days_of_week = ?, schedule_type = ?, prayer_name = ?, prayer_offset = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `);
 
-    stmt.run(messageContent, sendTime, daysOfWeek, id);
+    stmt.run(
+        data.messageContent,
+        data.sendTime || null,
+        data.daysOfWeek,
+        data.scheduleType || 'fixed',
+        data.prayerName || null,
+        data.prayerOffset || 10,
+        id
+    );
 }
 
 function deleteMessage(id) {
@@ -42,6 +53,14 @@ function toggleMessage(id, isActive) {
     ).run(isActive ? 1 : 0, id);
 }
 
+function getPrayerBasedMessages() {
+    return db.prepare("SELECT * FROM messages WHERE schedule_type = 'prayer' AND is_active = 1").all();
+}
+
+function getActiveMessages() {
+    return db.prepare("SELECT * FROM messages WHERE is_active = 1").all();
+}
+
 export {
     getAllMessages,
     getMessageById,
@@ -49,4 +68,6 @@ export {
     updateMessage,
     deleteMessage,
     toggleMessage,
+    getPrayerBasedMessages,
+    getActiveMessages,
 };

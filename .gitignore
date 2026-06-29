@@ -6,3 +6,5 @@ logs/
 .DS_Store
 .wwebjs_auth/
 db.sqlite
+db.sqlite-shm
+db.sqlite-wal
