@@ -1,10 +1,40 @@
-node_modules/
+# Environment variables
+backend/.env
 .env
-data/
-logs/
-*.log
-.DS_Store
-.wwebjs_auth/
+
+# Database
+backend/db.sqlite
+backend/db.sqlite-shm
+backend/db.sqlite-wal
 db.sqlite
 db.sqlite-shm
 db.sqlite-wal
+
+# WhatsApp session data
+backend/.wwebjs_auth/
+backend/.wwebjs_cache/
+backend/data/whatsapp-session/
+.wwebjs_auth/
+.wwebjs_cache/
+data/
+
+# Logs
+backend/*.log
+backend/logs/
+logs/
+*.log
+
+# Node modules
+backend/node_modules/
+frontend/node_modules/
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

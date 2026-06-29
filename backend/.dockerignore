@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+db.sqlite
+db.sqlite-shm
+db.sqlite-wal
+.wwebjs_auth/
+.wwebjs_cache/
+data/
+*.log
+.git
+.gitignore
+README.md
+DEPLOYMENT.md
