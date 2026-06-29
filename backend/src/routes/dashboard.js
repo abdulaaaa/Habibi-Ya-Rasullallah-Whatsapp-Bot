@@ -5,6 +5,7 @@ import { SUCCESS } from '../config/constants.js';
 import * as messageService from '../services/messageService.js';
 import * as schedulerService from '../services/schedulerService.js';
 import * as whatsappService from '../services/whatsappService.js';
+import * as prayerTimesService from '../services/prayerTimesService.js';
 
 // Dashboard page
 router.get('/dashboard', requireAuth, (req, res) => {
@@ -31,30 +32,61 @@ router.get('/api/messages', requireAuth, (req, res) => {
 });
 
 // POST /api/messages - Create new message
-router.post('/api/messages', requireAuth, (req, res) => {
+router.post('/api/messages', requireAuth, async (req, res) => {
     try {
-        const { message_content, send_time, days_of_week, is_active } = req.body;
+        const {
+            message_content,
+            send_time,
+            days_of_week,
+            is_active,
+            schedule_type,
+            prayer_name,
+            prayer_offset
+        } = req.body;
 
         console.log('Creating message:', {
             message_content: message_content?.substring(0, 50) + '...',
             send_time,
             days_of_week,
+            schedule_type,
+            prayer_name,
+            prayer_offset,
             is_active
         });
 
         // Validation
-        if (!message_content || !send_time || !days_of_week) {
+        if (!message_content || !days_of_week) {
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields'
             });
         }
 
+        // Validate based on schedule type
+        if (schedule_type === 'prayer') {
+            if (!prayer_name || !['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].includes(prayer_name)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid or missing prayer name'
+                });
+            }
+        } else {
+            if (!send_time) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Send time is required for fixed schedules'
+                });
+            }
+        }
+
         // Create message in database
         const messageId = messageService.createMessage({
             messageContent: message_content,
             sendTime: send_time,
-            daysOfWeek: days_of_week
+            daysOfWeek: days_of_week,
+            scheduleType: schedule_type,
+            prayerName: prayer_name,
+            prayerOffset: prayer_offset
         });
 
         // Set active status if provided
@@ -65,7 +97,8 @@ router.post('/api/messages', requireAuth, (req, res) => {
         // Add to scheduler if active
         if (is_active) {
             try {
-                schedulerService.addSchedule(messageId, send_time, days_of_week, message_content);
+                const fullMessage = messageService.getMessageById(messageId);
+                await schedulerService.addSchedule(messageId, fullMessage);
                 console.log(`Schedule added for message ${messageId}`);
             } catch (error) {
                 console.error('Failed to schedule message:', error.message);
@@ -89,15 +122,26 @@ router.post('/api/messages', requireAuth, (req, res) => {
 });
 
 // PUT /api/messages/:id - Update message
-router.put('/api/messages/:id', requireAuth, (req, res) => {
+router.put('/api/messages/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { message_content, send_time, days_of_week, is_active } = req.body;
+        const {
+            message_content,
+            send_time,
+            days_of_week,
+            is_active,
+            schedule_type,
+            prayer_name,
+            prayer_offset
+        } = req.body;
 
         console.log(`Updating message ${id}:`, {
             message_content: message_content?.substring(0, 50),
             send_time,
             days_of_week,
+            schedule_type,
+            prayer_name,
+            prayer_offset,
             is_active
         });
 
@@ -111,12 +155,14 @@ router.put('/api/messages/:id', requireAuth, (req, res) => {
         }
 
         // Update message in database
-        messageService.updateMessage(
-            parseInt(id),
-            message_content || existingMessage.message_content,
-            send_time || existingMessage.send_time,
-            days_of_week || existingMessage.days_of_week
-        );
+        messageService.updateMessage(parseInt(id), {
+            messageContent: message_content || existingMessage.message_content,
+            sendTime: send_time || existingMessage.send_time,
+            daysOfWeek: days_of_week || existingMessage.days_of_week,
+            scheduleType: schedule_type || existingMessage.schedule_type,
+            prayerName: prayer_name !== undefined ? prayer_name : existingMessage.prayer_name,
+            prayerOffset: prayer_offset !== undefined ? prayer_offset : existingMessage.prayer_offset
+        });
 
         // Update active status if provided
         if (is_active !== undefined) {
@@ -129,12 +175,7 @@ router.put('/api/messages/:id', requireAuth, (req, res) => {
         // Update scheduler if message is active
         if (updatedMessage.is_active) {
             try {
-                schedulerService.updateSchedule(
-                    parseInt(id),
-                    updatedMessage.send_time,
-                    updatedMessage.days_of_week,
-                    updatedMessage.message_content
-                );
+                await schedulerService.updateSchedule(parseInt(id), updatedMessage);
                 console.log(`Schedule updated for message ${id}`);
             } catch (error) {
                 console.error('Failed to update schedule:', error.message);
@@ -197,7 +238,7 @@ router.delete('/api/messages/:id', requireAuth, (req, res) => {
 });
 
 // PATCH /api/messages/:id/toggle - Toggle message active status
-router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
+router.patch('/api/messages/:id/toggle', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -220,12 +261,8 @@ router.patch('/api/messages/:id/toggle', requireAuth, (req, res) => {
         if (newStatus) {
             // Activate: add to scheduler
             try {
-                schedulerService.addSchedule(
-                    parseInt(id),
-                    message.send_time,
-                    message.days_of_week,
-                    message.message_content
-                );
+                const updatedMessage = messageService.getMessageById(parseInt(id));
+                await schedulerService.addSchedule(parseInt(id), updatedMessage);
                 console.log(`Schedule activated for message ${id}`);
             } catch (error) {
                 console.error('Failed to activate schedule:', error.message);
@@ -382,6 +419,26 @@ router.get('/api/schedule/next', requireAuth, (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to get execution times'
+        });
+    }
+});
+
+// GET /api/prayer-times - Get today's prayer times
+router.get('/api/prayer-times', requireAuth, async (req, res) => {
+    try {
+        console.log('Getting prayer times for today');
+
+        const prayerTimes = await prayerTimesService.getTodayPrayerTimes();
+
+        res.json({
+            success: true,
+            times: prayerTimes
+        });
+    } catch (error) {
+        console.error('Error getting prayer times:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get prayer times'
         });
     }
 });

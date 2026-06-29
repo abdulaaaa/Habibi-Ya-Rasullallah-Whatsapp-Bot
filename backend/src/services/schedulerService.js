@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import * as prayerTimesService from './prayerTimesService.js';
 
 // Store active cron jobs (messageId -> cron job)
 const jobs = new Map();
@@ -6,6 +7,9 @@ const jobs = new Map();
 // Store for WhatsApp service (will be injected)
 let whatsappService = null;
 let messageService = null;
+
+// Store midnight update job
+let midnightUpdateJob = null;
 
 /**
  * Initialize scheduler with services
@@ -15,30 +19,42 @@ function initialize(services) {
     whatsappService = services.whatsappService;
     messageService = services.messageService;
     console.log('Scheduler service initialized');
+
+    // Start midnight update job for prayer-based messages
+    startMidnightUpdateJob();
 }
 
 /**
  * Initialize schedules from database
  * Loads all active messages and creates cron jobs for them
  */
-function initializeSchedules() {
+async function initializeSchedules() {
     console.log('Initializing schedules...');
 
-    // For now, this is a placeholder
-    // When messageService is ready, it will load from database
     if (messageService && messageService.getAllMessages) {
         const messages = messageService.getAllMessages();
         const activeMessages = messages.filter(m => m.is_active);
 
         console.log(`Found ${activeMessages.length} active messages to schedule`);
 
-        activeMessages.forEach(msg => {
+        // Fetch today's prayer times if we have prayer-based messages
+        const prayerMessages = activeMessages.filter(m => m.schedule_type === 'prayer');
+        if (prayerMessages.length > 0) {
             try {
-                addSchedule(msg.id, msg.send_time, msg.days_of_week, msg.message_content);
+                await prayerTimesService.getTodayPrayerTimes();
+                console.log('Prayer times loaded successfully');
+            } catch (error) {
+                console.error('Failed to load prayer times:', error.message);
+            }
+        }
+
+        for (const msg of activeMessages) {
+            try {
+                await addSchedule(msg.id, msg);
             } catch (error) {
                 console.error(`Failed to schedule message ${msg.id}:`, error.message);
             }
-        });
+        }
 
         console.log(`Initialized ${jobs.size} scheduled jobs`);
     } else {
@@ -47,15 +63,54 @@ function initializeSchedules() {
 }
 
 /**
- * Add a new schedule for a message
+ * Add a new schedule for a message (supports both fixed and prayer-based)
  * @param {number} messageId - Message ID
- * @param {string} time - Time in HH:MM format
- * @param {string} days - Days of week (comma-separated 0-6, or "*" for all)
- * @param {string} content - Message content to send
+ * @param {Object} message - Message object with all details
  */
-function addSchedule(messageId, time, days, content) {
+async function addSchedule(messageId, message) {
     // Remove existing job if any
     removeSchedule(messageId);
+
+    let time, days, content;
+
+    // Determine if this is a prayer-based or fixed schedule
+    if (message.schedule_type === 'prayer') {
+        // Prayer-based schedule
+        days = message.days_of_week;
+        content = message.message_content;
+
+        try {
+            const prayerTimes = await prayerTimesService.getTodayPrayerTimes();
+            const prayerTime = prayerTimes[message.prayer_name];
+
+            if (!prayerTime) {
+                throw new Error(`Prayer time not found for ${message.prayer_name}`);
+            }
+
+            time = prayerTimesService.calculatePrayerTimeWithOffset(
+                prayerTime,
+                message.prayer_offset || 10
+            );
+
+            // Format for logging
+            const formatTimeLog = (t) => {
+                const [h, m] = t.split(':').map(Number);
+                const h12 = h % 12 || 12;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                return `${h12}:${String(m).padStart(2, '0')} ${ampm} EST`;
+            };
+
+            console.log(`Prayer-based schedule: ${message.prayer_name} at ${formatTimeLog(prayerTime)} + ${message.prayer_offset}min = ${formatTimeLog(time)}`);
+        } catch (error) {
+            console.error(`Failed to get prayer time for message ${messageId}:`, error.message);
+            throw error;
+        }
+    } else {
+        // Fixed schedule (original behavior)
+        time = message.send_time || message;
+        days = message.days_of_week || arguments[2];
+        content = message.message_content || arguments[3];
+    }
 
     // Parse time
     const [hour, minute] = time.split(':');
@@ -99,14 +154,23 @@ function addSchedule(messageId, time, days, content) {
         }
     }, {
         scheduled: true,
-        timezone: 'America/New_York' // Change to your timezone
+        timezone: 'America/Indianapolis'  // EST/EDT (Eastern Time)
     });
 
     jobs.set(messageId, job);
 
-    // Log schedule info
+    // Log schedule info - format time to 12-hour
+    const formatTime = (time24) => {
+        const [hour24, minute] = time24.split(':').map(Number);
+        const hour12 = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        return `${hour12}:${String(minute).padStart(2, '0')} ${ampm} EST`;
+    };
+
     const daysFormatted = days === '*' ? 'Every day' : `Days: ${days}`;
-    console.log(`Scheduled message ${messageId}: ${time} - ${daysFormatted}`);
+    const scheduleType = message.schedule_type === 'prayer' ? `Prayer (${message.prayer_name})` : 'Fixed';
+    const timeFormatted = formatTime(time);
+    console.log(`Scheduled message ${messageId} [${scheduleType}]: ${timeFormatted} - ${daysFormatted}`);
 
     return job;
 }
@@ -114,18 +178,16 @@ function addSchedule(messageId, time, days, content) {
 /**
  * Update an existing schedule
  * @param {number} messageId - Message ID
- * @param {string} time - New time in HH:MM format
- * @param {string} days - New days of week
- * @param {string} content - New message content
+ * @param {Object} message - Message object with new details
  */
-function updateSchedule(messageId, time, days, content) {
+async function updateSchedule(messageId, message) {
     console.log(`Updating schedule for message ${messageId}`);
 
     // Remove old schedule
     removeSchedule(messageId);
 
     // Add new schedule
-    addSchedule(messageId, time, days, content);
+    await addSchedule(messageId, message);
 
     console.log(`Schedule updated for message ${messageId}`);
 }
@@ -216,6 +278,78 @@ function addTestSchedule(content = 'Test message from scheduler') {
     return testId;
 }
 
+/**
+ * Reschedule all prayer-based messages (called at midnight)
+ */
+async function reschedulePrayerBasedMessages() {
+    console.log('Rescheduling all prayer-based messages with new prayer times...');
+
+    if (!messageService || !messageService.getPrayerBasedMessages) {
+        console.log('Message service not available - skipping reschedule');
+        return;
+    }
+
+    try {
+        // Fetch tomorrow's prayer times (since we're running at midnight)
+        await prayerTimesService.fetchAndCacheTodayPrayerTimes();
+
+        // Get all prayer-based messages
+        const prayerMessages = messageService.getPrayerBasedMessages();
+        console.log(`Found ${prayerMessages.length} prayer-based messages to reschedule`);
+
+        // Reschedule each one
+        for (const msg of prayerMessages) {
+            try {
+                await updateSchedule(msg.id, msg);
+                console.log(`Rescheduled message ${msg.id}`);
+            } catch (error) {
+                console.error(`Failed to reschedule message ${msg.id}:`, error.message);
+            }
+        }
+
+        console.log('Prayer-based messages rescheduled successfully');
+    } catch (error) {
+        console.error('Error rescheduling prayer-based messages:', error);
+    }
+}
+
+/**
+ * Start the midnight update job for prayer times
+ */
+function startMidnightUpdateJob() {
+    if (midnightUpdateJob) {
+        console.log('Midnight update job already running');
+        return;
+    }
+
+    // Run at 00:01 every day to update prayer times and reschedule messages
+    midnightUpdateJob = cron.schedule('1 0 * * *', async () => {
+        console.log('=== MIDNIGHT UPDATE: Updating prayer times for new day ===');
+
+        try {
+            await reschedulePrayerBasedMessages();
+        } catch (error) {
+            console.error('Error in midnight update:', error);
+        }
+    }, {
+        scheduled: true,
+        timezone: 'America/Indianapolis'  // EST/EDT (Eastern Time)
+    });
+
+    console.log('Midnight update job started - will update prayer times daily at 00:01');
+}
+
+/**
+ * Stop the midnight update job
+ */
+function stopMidnightUpdateJob() {
+    if (midnightUpdateJob) {
+        midnightUpdateJob.stop();
+        midnightUpdateJob = null;
+        console.log('Midnight update job stopped');
+    }
+}
+
 export {
     initialize,
     initializeSchedules,
@@ -225,5 +359,8 @@ export {
     stopAllSchedules,
     getNextExecutionTimes,
     getStatus,
-    addTestSchedule
+    addTestSchedule,
+    reschedulePrayerBasedMessages,
+    startMidnightUpdateJob,
+    stopMidnightUpdateJob
 };

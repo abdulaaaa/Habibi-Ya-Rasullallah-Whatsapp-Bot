@@ -29,28 +29,6 @@
         </nav>
 
         <div class="container-fluid">
-            <!-- WhatsApp Group Info -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="card-title mb-2">WhatsApp Configuration</h6>
-                                    <p class="mb-0">
-                                        <strong>Target Group:</strong>
-                                        <span id="targetGroup" class="text-muted">Not configured</span>
-                                    </p>
-                                </div>
-                                <button class="btn btn-outline-primary btn-sm" onclick="showGroups()">
-                                    <i class="bi bi-list"></i> Select Group
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Messages Section -->
             <div class="row mb-3">
                 <div class="col-12">
@@ -83,8 +61,13 @@
                     <div class="card bg-light">
                         <div class="card-body">
                             <h6 class="card-title">Test Message</h6>
-                            <button class="btn btn-outline-primary btn-sm" onclick="sendTestMessage()">
-                                <i class="bi bi-send"></i> Send Test Message
+                            <p class="text-muted small">Send a custom message immediately to the selected group</p>
+                            <div class="mb-3">
+                                <textarea class="form-control" id="testMessageContent" rows="3"
+                                          placeholder="Enter your test message here..."></textarea>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="sendTestMessage()">
+                                <i class="bi bi-send"></i> Send Now
                             </button>
                         </div>
                     </div>
@@ -113,8 +96,33 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">Schedule Type</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="scheduleType" id="scheduleFixed" value="fixed" checked>
+                                <label class="btn btn-outline-primary" for="scheduleFixed">Fixed Time</label>
+
+                                <input type="radio" class="btn-check" name="scheduleType" id="schedulePrayer" value="prayer">
+                                <label class="btn btn-outline-primary" for="schedulePrayer">Prayer Time</label>
+                            </div>
+                        </div>
+
+                        <!-- Fixed Time Section (shown by default) -->
+                        <div id="fixedTimeSection" class="mb-3">
                             <label for="sendTime" class="form-label">Send Time</label>
-                            <input type="time" class="form-control" id="sendTime" required>
+                            <input type="time" class="form-control" id="sendTime">
+                        </div>
+
+                        <!-- Prayer Time Section (hidden by default) -->
+                        <div id="prayerTimeSection" class="mb-3" style="display: none;">
+                            <label for="prayerName" class="form-label">Prayer Time</label>
+                            <select class="form-select" id="prayerName">
+                                <option value="fajr">10 min after Fajr</option>
+                                <option value="dhuhr">10 min after Dhuhr</option>
+                                <option value="asr">10 min after Asr</option>
+                                <option value="maghrib">10 min after Maghrib</option>
+                                <option value="isha">10 min after Isha</option>
+                            </select>
+                            <div class="form-text text-muted" id="prayerTimePreview">Loading prayer times...</div>
                         </div>
 
                         <div class="mb-3">

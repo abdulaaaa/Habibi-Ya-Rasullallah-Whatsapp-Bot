@@ -9,6 +9,7 @@ dotenv.config();
 import * as whatsappService from './services/whatsappService.js';
 import * as messageService from './services/messageService.js';
 import * as schedulerService from './services/schedulerService.js';
+import * as prayerTimesService from './services/prayerTimesService.js';
 
 const app = express();
 
@@ -86,6 +87,31 @@ app.listen(PORT, async () => {
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
     console.log('');
 
+    // Initialize prayer times service
+    console.log('Fetching today\'s prayer times for Indianapolis (EST)...');
+    try {
+        const prayerTimes = await prayerTimesService.fetchAndCacheTodayPrayerTimes();
+
+        // Helper to format time to 12-hour with AM/PM
+        const formatTime = (time24) => {
+            const [hour24, minute] = time24.split(':').map(Number);
+            const hour12 = hour24 % 12 || 12;
+            const ampm = hour24 >= 12 ? 'PM' : 'AM';
+            return `${hour12}:${String(minute).padStart(2, '0')} ${ampm} EST`;
+        };
+
+        console.log('Prayer times loaded:');
+        console.log(`  Fajr: ${formatTime(prayerTimes.fajr)}`);
+        console.log(`  Dhuhr: ${formatTime(prayerTimes.dhuhr)}`);
+        console.log(`  Asr: ${formatTime(prayerTimes.asr)}`);
+        console.log(`  Maghrib: ${formatTime(prayerTimes.maghrib)}`);
+        console.log(`  Isha: ${formatTime(prayerTimes.isha)}`);
+    } catch (error) {
+        console.error('Failed to fetch prayer times:', error.message);
+        console.log('Scheduler will attempt to fetch prayer times when needed');
+    }
+    console.log('');
+
     // Initialize WhatsApp client
     console.log('Initializing WhatsApp client...');
     whatsappService.initializeClient();
@@ -99,7 +125,7 @@ app.listen(PORT, async () => {
 
     // Load all active schedules from database
     console.log('Loading active message schedules...');
-    schedulerService.initializeSchedules();
+    await schedulerService.initializeSchedules();
 
     console.log('');
     console.log('All services initialized!');
